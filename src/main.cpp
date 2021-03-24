@@ -145,13 +145,15 @@ void building_mapper(std::map<std::string, std::map<unsigned int, std::vector<Po
             else{
                 if(j-2+1==i.second.size()){break;}
                     auto bottom1 = b[i.first].find(0)->second[j-2];
-                vertices.push_back(bottom1);
                     auto bottom2 = b[i.first].find(0)->second[j-2+1];
-                vertices.push_back(bottom2);
                     auto up1 = b[i.first].find(1)->second[j-2];
-                vertices.push_back(up1);
                     auto up2 = b[i.first].find(1)->second[j-2+1];
+
+                    //CCW wall orientation
+                vertices.push_back(bottom1);
+                vertices.push_back(up1);
                 vertices.push_back(up2);
+                vertices.push_back(bottom2);
             }
             second[j] = vertices;
             b[i.first] = second;
@@ -166,6 +168,9 @@ int main(int argc, const char * argv[]) {
     std::map<std::string, std::map<unsigned int, std::vector<Point>>> buildings;
     std::map<std::string, std::string> const_year;
     std::map<std::string, unsigned int> storeys;
+//TODO: Flip ground orientation
+//TODO: Subsample (especially with holes) for testing
+//TODO: Identify holes in read function where "[[x"
 
     //Read CSV file, mapping vertices to their building
     read(file_in,vertices,const_year, storeys);
