@@ -35,9 +35,25 @@ std::vector<std::string> spliter(const std::string& str){
     return splited;
 }
 
-void read(const char *file_in, std::unordered_map<std::string, std::vector<Point>> &v,
-          std::unordered_map<std::string, std::string>& constr,
-          std::unordered_map<std::string, unsigned int>& floors ) {
+std::vector<std::string> spliter2(const std::string& str){
+    std::vector<std::string> splited;
+    std::string element;
+    for (auto x : str){
+        if (x == ';')
+        {
+            splited.push_back(element);
+            element = "";
+        }
+        else {
+            element = element + x;
+        }
+    }
+    splited.push_back(element);
+    return splited;
+}
+void read(const char *file_in, std::map<std::string, std::vector<Point>> &v,
+          std::map<std::string, std::string>& constr,
+          std::map<std::string, unsigned int>& floors ) {
     //the file needs to be of the following format starting from column 0:
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ column 1 -> id (string)
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ column 8 -> year of construction (string)
@@ -54,7 +70,7 @@ void read(const char *file_in, std::unordered_map<std::string, std::vector<Point
         std::istringstream iss(line);
         std::vector<std::string> splited_line = spliter(line);
         std::vector<Point> verts;
-
+        //auto q = spliter2(splited_line[19]);
         for (unsigned int i = 16; i<splited_line.size(); i=i+2 ) {//Start from 16th element (from wich the coordinate start and continue with step 2
 
             //Get X coordinate from current line
@@ -110,10 +126,10 @@ std::vector<double> cornerpoints(std::vector<std::vector<double>> v, const std::
     }
 }
 
-void building_mapper(std::unordered_map<std::string, std::unordered_map<unsigned int, std::vector<Point>>>& b,std::unordered_map<std::string, std::vector<Point>>& v){
+void building_mapper(std::map<std::string, std::map<unsigned int, std::vector<Point>>>& b,std::map<std::string, std::vector<Point>>& v){
 
     for (auto const& i : v){
-        std::unordered_map<unsigned int, std::vector<Point>> second;
+        std::map<unsigned int, std::vector<Point>> second;
         for (unsigned int j = 0; j < i.second.size()+2; j++) { //faces
             std::vector<Point> vertices;
             if (j == 0) {
@@ -127,7 +143,7 @@ void building_mapper(std::unordered_map<std::string, std::unordered_map<unsigned
                     }
                 }
             else{
-                if(j+1==i.second.size()){break;}
+                if(j-2+1==i.second.size()){break;}
                     auto bottom1 = b[i.first].find(0)->second[j-2];
                 vertices.push_back(bottom1);
                     auto bottom2 = b[i.first].find(0)->second[j-2+1];
@@ -146,10 +162,10 @@ void building_mapper(std::unordered_map<std::string, std::unordered_map<unsigned
 int main(int argc, const char * argv[]) {
     const char *file_in = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/tudcampus.csv";
     const char *file_out = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/TU.json";
-    std::unordered_map<std::string, std::vector<Point>> vertices;
-    std::unordered_map<std::string, std::unordered_map<unsigned int, std::vector<Point>>> buildings;
-    std::unordered_map<std::string, std::string> const_year;
-    std::unordered_map<std::string, unsigned int> storeys;
+    std::map<std::string, std::vector<Point>> vertices;
+    std::map<std::string, std::map<unsigned int, std::vector<Point>>> buildings;
+    std::map<std::string, std::string> const_year;
+    std::map<std::string, unsigned int> storeys;
 
     //Read CSV file, mapping vertices to their building
     read(file_in,vertices,const_year, storeys);
@@ -157,8 +173,8 @@ int main(int argc, const char * argv[]) {
     //Map-> building : { id : building_id , faces : { id :  face_id, vertices : [[v1,...vn]] }}
     building_mapper(buildings,vertices);
 
-
-    auto a= buildings["0503100000019818"];
+    auto b = vertices["0503100000020070"];
+    auto a= buildings["0503100000020070"];
     int count=0;
 
   return 0;
