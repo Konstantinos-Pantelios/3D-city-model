@@ -35,7 +35,9 @@ std::vector<std::string> spliter(const std::string& str){
     return splited;
 }
 
-void read(const char *file_in, std::unordered_map<std::string, std::vector<Point>> &v,std::unordered_map<std::pair<double,double>,double, boost::hash<std::pair<double, double>>>& roof ) {
+void read(const char *file_in, std::unordered_map<std::string, std::vector<Point>> &v,
+          std::unordered_map<std::string, std::string>& constr,
+          std::unordered_map<std::string, unsigned int>& floors ) {
     std::string line = "";
     std::ifstream file(file_in, std::ifstream::in);
     if (!file) { std::cerr << "Input file not found. Check the relative file path\n"; }
@@ -61,7 +63,7 @@ void read(const char *file_in, std::unordered_map<std::string, std::vector<Point
             std::pair<double,double> p;
             p.first = id_x; p.second = id_y;
             double roofz = stod(splited_line[12]);
-            roof[p]=roofz;
+
 
             verts.push_back(Point(id_x,id_y,z,roofz));
                 //v.push_back(Point(std::stof(splited_line[1]), std::stof(splited_line[2]), std::stof(splited_line[3])));
@@ -70,6 +72,8 @@ void read(const char *file_in, std::unordered_map<std::string, std::vector<Point
         if (line == ""){continue;}
         std::string id = splited_line[1];
         v[id] = verts;
+        constr[id]=splited_line[8];
+        floors[id]=floor(verts.back().z_r/3);
     }
 }
 
@@ -98,7 +102,7 @@ std::vector<double> cornerpoints(std::vector<std::vector<double>> v, const std::
     }
 }
 
-void populate(std::unordered_map<std::string, std::unordered_map<unsigned int, std::vector<Point>>>& b, std::unordered_map<std::string, std::vector<Point>>& v,std::unordered_map<std::pair<double,double>,double, boost::hash<std::pair<double, double>>>& roof ){
+void populate(std::unordered_map<std::string, std::unordered_map<unsigned int, std::vector<Point>>>& b,std::unordered_map<std::string, std::vector<Point>>& v){
 
     for (auto const& i : v){
         std::unordered_map<unsigned int, std::vector<Point>> second;
@@ -111,10 +115,7 @@ void populate(std::unordered_map<std::string, std::unordered_map<unsigned int, s
             }
             else if ( j == 1){
                     for (unsigned int k = 0; k < i.second.size(); k++) {
-                        auto x = i.second[k].x;
-                        auto y = i.second[k].y;
-                        auto p = roof[std::make_pair(i.second[k].x,i.second[k].y)];
-                        //auto z = roof[std::make_pair(i.second[k].x,i.second[k].y)];
+
                         vertices.push_back(Point(i.second[k].x,i.second[k].y,i.second[k].z_r,i.second[k].z));
                     }
                 }
@@ -144,13 +145,14 @@ int main(int argc, const char * argv[]) {
     const char *file_out = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/TU.json";
     std::unordered_map<std::string, std::vector<Point>> vertices;
     std::unordered_map<std::string, std::unordered_map<unsigned int, std::vector<Point>>> buildings;
-    std::unordered_map<std::pair<double,double>,double, boost::hash<std::pair<double, double>>> xy_roof;
+    std::unordered_map<std::string, std::string> const_year;
+    std::unordered_map<std::string, unsigned int> storeys;
 
-    read(file_in,vertices,xy_roof);
+    read(file_in,vertices,const_year, storeys);
 
-    auto a = xy_roof[std::make_pair(85601.2422,446927.875)];
-    populate(buildings,vertices,xy_roof);
 
+    populate(buildings,vertices);
+    auto a= storeys["0503100000020276"];
     int count=0;
 
   return 0;
