@@ -9,26 +9,67 @@
 #include "stdio.h"
 #include "stdlib.h"
 
+#include <map>
+#include <unordered_map>
+#include <boost/functional/hash.hpp>
+#include <stack>
+#include <algorithm>
+
 #include "Point.h"
 #include "json.hpp"
 
-
-void read(const char *file_in, std::vector<std::vector<double>> &v) {
-    std::ifstream stream_in;
-    stream_in.open(file_in);
-    if (stream_in.is_open()) {
-        std::string line;
-        while (getline(stream_in, line)) {
-            std::istringstream iss(line);
-            std::string word;
-            iss >> word;
-            if (word == "v") {
-                std::vector<double> coordinates;
-                while (iss >> word)
-                    coordinates.push_back(std::stof(word));
-                if (coordinates.size() == 3) v.push_back({coordinates[0], coordinates[1], coordinates[2]});
-            }
+std::vector<std::string> spliter(const std::string& str){
+    std::vector<std::string> splited;
+    std::string element;
+    for (auto x : str){
+        if (x == ',')
+        {
+            splited.push_back(element);
+            element = "";
         }
+        else {
+            element = element + x;
+        }
+    }
+    splited.push_back(element);
+    return splited;
+}
+
+void read(const char *file_in, std::unordered_map<std::string, std::vector<Point>> &v,std::unordered_map<std::pair<double,double>,double, boost::hash<std::pair<double, double>>>& roof ) {
+    std::string line = "";
+    std::ifstream file(file_in, std::ifstream::in);
+    if (!file) { std::cerr << "Input file not found. Check the relative file path\n"; }
+    int count = 0;
+    while (!file.eof()) {
+        std::getline(file, line);
+        if (count == 0){count++; continue;}
+        std::istringstream iss(line);
+        std::vector<std::string> splited_line = spliter(line);
+        std::vector<Point> verts;
+        for (unsigned int i = 16; i<splited_line.size(); i=i+2 ) {
+
+            size_t j = 0;
+            for ( ; j < splited_line[i].length(); j++ ){ if ( isdigit(splited_line[i][j]) ) break; }
+            splited_line[i] = splited_line[i].substr(j, splited_line[i].length() - j );
+            double id_x = atof(splited_line[i].c_str());
+
+            j=0;
+            for ( ; j < splited_line[i+1].length(); j++ ){ if ( isdigit(splited_line[i+1][j]) ) break; }
+            splited_line[i+1] = splited_line[i+1].substr(j, splited_line[i+1].length() - j );
+            double id_y = atof(splited_line[i+1].c_str());
+            double z = stod(splited_line[13]);
+            std::pair<double,double> p;
+            p.first = id_x; p.second = id_y;
+            double roofz = stod(splited_line[12]);
+            roof[p]=roofz;
+
+            verts.push_back(Point(id_x,id_y,z,roofz));
+                //v.push_back(Point(std::stof(splited_line[1]), std::stof(splited_line[2]), std::stof(splited_line[3])));
+
+        }
+        if (line == ""){continue;}
+        std::string id = splited_line[1];
+        v[id] = verts;
     }
 }
 
@@ -57,28 +98,60 @@ std::vector<double> cornerpoints(std::vector<std::vector<double>> v, const std::
     }
 }
 
-int main(int argc, const char * argv[]) {
-    const char *file_in = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/tuJ.json";
-    const char *file_out = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/TU.json";
-    std::vector<std::vector<double>> vertices;
+void populate(std::unordered_map<std::string, std::unordered_map<unsigned int, std::vector<Point>>>& b, std::unordered_map<std::string, std::vector<Point>>& v,std::unordered_map<std::pair<double,double>,double, boost::hash<std::pair<double, double>>>& roof ){
+
+    for (auto const& i : v){
+        std::unordered_map<unsigned int, std::vector<Point>> second;
+        for (unsigned int j = 0; j < i.second.size()+2; j++) { //faces
+            std::vector<Point> vertices;
+            if (j == 0) {
+                for (unsigned int k = 0; k < i.second.size(); k++) {
+                    vertices.push_back(i.second[k]);
+                }
+            }
+            else if ( j == 1){
+                    for (unsigned int k = 0; k < i.second.size(); k++) {
+                        auto x = i.second[k].x;
+                        auto y = i.second[k].y;
+                        auto p = roof[std::make_pair(i.second[k].x,i.second[k].y)];
+                        //auto z = roof[std::make_pair(i.second[k].x,i.second[k].y)];
+                        vertices.push_back(Point(i.second[k].x,i.second[k].y,i.second[k].z_r,i.second[k].z));
+                    }
+                }
+            else{
+                //if (j-2+1 == i.second.size()){break;}
+                    //auto z = i.second[k].z + roof[std::make_pair(i.second[k].x,i.second[k].y)];
+                    auto bottom1 = b[i.first].find(0)->second[j-2];
+                vertices.push_back(bottom1);
+                    auto bottom2 = b[i.first].find(0)->second[j-2+1];
+                vertices.push_back(bottom2);
+                    auto up1 = b[i.first].find(1)->second[j-2];
+                vertices.push_back(up1);
+                    auto up2 = b[i.first].find(1)->second[j-2+1];
+                vertices.push_back(up2);
+            }
 
 
-    std::ifstream ifs(file_in);
 
-    nlohmann::json jf = nlohmann::json::parse(ifs);
-
-    std::vector<std::vector<double>> coords;
-
-int count = 0;
-    for (auto const& i : jf["CityObjects"]){
-        count++;
-        auto id = i.value("identificatie","NOt found") ;
-        //auto q=i.value("json_geometry.type","not f");
-
-
+            second[j] = vertices;
+            b[i.first] = second;
+        }
     }
+}
 
-    read(file_in,vertices);
+int main(int argc, const char * argv[]) {
+    const char *file_in = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/tudcampus.csv";
+    const char *file_out = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/TU.json";
+    std::unordered_map<std::string, std::vector<Point>> vertices;
+    std::unordered_map<std::string, std::unordered_map<unsigned int, std::vector<Point>>> buildings;
+    std::unordered_map<std::pair<double,double>,double, boost::hash<std::pair<double, double>>> xy_roof;
+
+    read(file_in,vertices,xy_roof);
+
+    auto a = xy_roof[std::make_pair(85601.2422,446927.875)];
+    populate(buildings,vertices,xy_roof);
+
+    int count=0;
 
   return 0;
 }
