@@ -38,6 +38,12 @@ std::vector<std::string> spliter(const std::string& str){
 void read(const char *file_in, std::unordered_map<std::string, std::vector<Point>> &v,
           std::unordered_map<std::string, std::string>& constr,
           std::unordered_map<std::string, unsigned int>& floors ) {
+    //the file needs to be of the following format starting from column 0:
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ column 1 -> id (string)
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ column 8 -> year of construction (string)
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ column 12 -> roof's height (string)
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ column 13 -> ground's height (string)
+
     std::string line = "";
     std::ifstream file(file_in, std::ifstream::in);
     if (!file) { std::cerr << "Input file not found. Check the relative file path\n"; }
@@ -48,32 +54,34 @@ void read(const char *file_in, std::unordered_map<std::string, std::vector<Point
         std::istringstream iss(line);
         std::vector<std::string> splited_line = spliter(line);
         std::vector<Point> verts;
-        for (unsigned int i = 16; i<splited_line.size(); i=i+2 ) {
 
+        for (unsigned int i = 16; i<splited_line.size(); i=i+2 ) {//Start from 16th element (from wich the coordinate start and continue with step 2
+
+            //Get X coordinate from current line
             size_t j = 0;
             for ( ; j < splited_line[i].length(); j++ ){ if ( isdigit(splited_line[i][j]) ) break; }
             splited_line[i] = splited_line[i].substr(j, splited_line[i].length() - j );
             double id_x = atof(splited_line[i].c_str());
 
+            //Get Y coordinate from next line
             j=0;
             for ( ; j < splited_line[i+1].length(); j++ ){ if ( isdigit(splited_line[i+1][j]) ) break; }
             splited_line[i+1] = splited_line[i+1].substr(j, splited_line[i+1].length() - j );
             double id_y = atof(splited_line[i+1].c_str());
+
+            //Get Z value from ground's height
             double z = stod(splited_line[13]);
-            std::pair<double,double> p;
-            p.first = id_x; p.second = id_y;
+            //Get Z value from roof's height
             double roofz = stod(splited_line[12]);
 
 
             verts.push_back(Point(id_x,id_y,z,roofz));
-                //v.push_back(Point(std::stof(splited_line[1]), std::stof(splited_line[2]), std::stof(splited_line[3])));
-
         }
         if (line == ""){continue;}
         std::string id = splited_line[1];
-        v[id] = verts;
-        constr[id]=splited_line[8];
-        floors[id]=floor(verts.back().z_r/3);
+        v[id] = verts; //Map vertices of building
+        constr[id]=splited_line[8]; //Map construction year of building
+        floors[id]=floor(verts.back().z_r/3); //Map number of floors of building *assume one floor is 3m high*
     }
 }
 
@@ -102,7 +110,7 @@ std::vector<double> cornerpoints(std::vector<std::vector<double>> v, const std::
     }
 }
 
-void populate(std::unordered_map<std::string, std::unordered_map<unsigned int, std::vector<Point>>>& b,std::unordered_map<std::string, std::vector<Point>>& v){
+void building_mapper(std::unordered_map<std::string, std::unordered_map<unsigned int, std::vector<Point>>>& b,std::unordered_map<std::string, std::vector<Point>>& v){
 
     for (auto const& i : v){
         std::unordered_map<unsigned int, std::vector<Point>> second;
@@ -115,13 +123,11 @@ void populate(std::unordered_map<std::string, std::unordered_map<unsigned int, s
             }
             else if ( j == 1){
                     for (unsigned int k = 0; k < i.second.size(); k++) {
-
                         vertices.push_back(Point(i.second[k].x,i.second[k].y,i.second[k].z_r,i.second[k].z));
                     }
                 }
             else{
-                //if (j-2+1 == i.second.size()){break;}
-                    //auto z = i.second[k].z + roof[std::make_pair(i.second[k].x,i.second[k].y)];
+                if(j+1==i.second.size()){break;}
                     auto bottom1 = b[i.first].find(0)->second[j-2];
                 vertices.push_back(bottom1);
                     auto bottom2 = b[i.first].find(0)->second[j-2+1];
@@ -131,9 +137,6 @@ void populate(std::unordered_map<std::string, std::unordered_map<unsigned int, s
                     auto up2 = b[i.first].find(1)->second[j-2+1];
                 vertices.push_back(up2);
             }
-
-
-
             second[j] = vertices;
             b[i.first] = second;
         }
@@ -148,11 +151,14 @@ int main(int argc, const char * argv[]) {
     std::unordered_map<std::string, std::string> const_year;
     std::unordered_map<std::string, unsigned int> storeys;
 
+    //Read CSV file, mapping vertices to their building
     read(file_in,vertices,const_year, storeys);
 
+    //Map-> building : { id : building_id , faces : { id :  face_id, vertices : [[v1,...vn]] }}
+    building_mapper(buildings,vertices);
 
-    populate(buildings,vertices);
-    auto a= storeys["0503100000020276"];
+
+    auto a= buildings["0503100000019818"];
     int count=0;
 
   return 0;
