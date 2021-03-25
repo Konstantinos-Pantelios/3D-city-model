@@ -35,22 +35,6 @@ std::vector<std::string> spliter(const std::string& str){
     return splited;
 }
 
-std::vector<std::string> spliter2(const std::string& str){
-    std::vector<std::string> splited;
-    std::string element;
-    for (auto x : str){
-        if (x == ';')
-        {
-            splited.push_back(element);
-            element = "";
-        }
-        else {
-            element = element + x;
-        }
-    }
-    splited.push_back(element);
-    return splited;
-}
 void read(const char *file_in, std::map<std::string, std::vector<Point>> &v,
           std::map<std::string, std::string>& constr,
           std::map<std::string, unsigned int>& floors ) {
@@ -130,30 +114,42 @@ void building_mapper(std::map<std::string, std::map<unsigned int, std::vector<Po
 
     for (auto const& i : v){
         std::map<unsigned int, std::vector<Point>> second;
+        std::vector<Point> CW_vert;
+        int reverse;
         for (unsigned int j = 0; j < i.second.size()+2; j++) { //faces
+
             std::vector<Point> vertices;
-            if (j == 0) {
-                for (unsigned int k = 0; k < i.second.size(); k++) {
+            if (j == 0) { //First face -> ground face (CW)
+                for (int k = i.second.size()-1; k >= 0; k--) {
                     vertices.push_back(i.second[k]);
                 }
-            }
-            else if ( j == 1){
-                    for (unsigned int k = 0; k < i.second.size(); k++) {
-                        vertices.push_back(Point(i.second[k].x,i.second[k].y,i.second[k].z_r,i.second[k].z));
-                    }
+                for (unsigned int k = 0; k < i.second.size(); k++) {
+                    CW_vert.push_back(i.second[k]);
                 }
+            }
+            else if ( j == 1){ //Second face -> roof face (CCW)
+
+                for (unsigned int k = 0; k < i.second.size(); k++) {
+                    vertices.push_back(Point(i.second[k].x,i.second[k].y,i.second[k].z_r,i.second[k].z));
+                }
+            }
+
+
+
             else{
                 if(j-2+1==i.second.size()){break;}
-                    auto bottom1 = b[i.first].find(0)->second[j-2];
-                    auto bottom2 = b[i.first].find(0)->second[j-2+1];
+                    auto bottom1 = CW_vert[j-2];
+                    auto bottom2 = CW_vert[j-2+1];
                     auto up1 = b[i.first].find(1)->second[j-2];
                     auto up2 = b[i.first].find(1)->second[j-2+1];
 
                     //CCW wall orientation
                 vertices.push_back(bottom1);
-                vertices.push_back(up1);
-                vertices.push_back(up2);
                 vertices.push_back(bottom2);
+                vertices.push_back(up2);
+                vertices.push_back(up1);
+
+
             }
             second[j] = vertices;
             b[i.first] = second;
@@ -162,8 +158,8 @@ void building_mapper(std::map<std::string, std::map<unsigned int, std::vector<Po
 }
 
 int main(int argc, const char * argv[]) {
-    const char *file_in = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/tudcampus.csv";
-    const char *file_out = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/TU.json";
+    const char *file_in = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/testCSV.csv";
+    const char *file_out = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/test.json";
     std::map<std::string, std::vector<Point>> vertices;
     std::map<std::string, std::map<unsigned int, std::vector<Point>>> buildings;
     std::map<std::string, std::string> const_year;
@@ -178,9 +174,29 @@ int main(int argc, const char * argv[]) {
     //Map-> building : { id : building_id , faces : { id :  face_id, vertices : [[v1,...vn]] }}
     building_mapper(buildings,vertices);
 
-    auto b = vertices["0503100000020070"];
-    auto a= buildings["0503100000020070"];
+    //auto b = vertices["0503100000020070"];
+    //auto a= buildings["0503100000020070"];
     int count=0;
 
+
+    //Export to CityJson
+    std::map<std::string,std::string> cityjson;
+    std::fstream fl;
+    fl.open(file_out, std::fstream::in | std::fstream::out | std::fstream::trunc);
+    fl << "{\n"<<
+          "  \"type\": \"CityJSON\",\n"<<
+          "  \"version\": \"1.0\",\n" <<
+          "  \"CityObjects\": {\n";
+
+    for (auto const& b : buildings){
+        fl << "\t\""<<b.first<<"\": {\n";
+        fl << "\t\"type\": \"Building\",\n";
+        fl << "\t\"attributes\": {\n";
+        fl << "\t  \"yearOfConstruction\": " << const_year[b.first]<<",\n";
+        fl << "\t  \"measuredHeight\": " << b.second.at(0).at(0).z_r<<",\n";
+        fl << "\t  \"storeysAboveGround\": " << storeys[b.first]<<",\n";
+    };
+
+    fl.close();
   return 0;
 }
