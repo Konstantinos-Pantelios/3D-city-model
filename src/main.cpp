@@ -34,7 +34,22 @@ std::vector<std::string> spliter(const std::string& str){
     splited.push_back(element);
     return splited;
 }
-
+std::vector<std::string> slash_spliter(const std::string& str){
+    std::vector<std::string> splited;
+    std::string element;
+    for (auto x : str){
+        if (x == '/')
+        {
+            splited.push_back(element);
+            element = "";
+        }
+        else {
+            element = element + x;
+        }
+    }
+    splited.push_back(element);
+    return splited;
+}
 void read(const char *file_in, std::map<std::string, std::vector<Point>> &v,
           std::map<std::string, std::string>& constr,
           std::map<std::string, unsigned int>& floors ) {
@@ -80,7 +95,7 @@ void read(const char *file_in, std::map<std::string, std::vector<Point>> &v,
         if (line == ""){continue;}
         std::string id = splited_line[1];
         v[id] = verts; //Map vertices of building
-        constr[id]=splited_line[8]; //Map construction year of building
+        constr[id]=slash_spliter(splited_line[8])[0]; //Map construction year of building
         floors[id]=floor(verts.back().z_r/3); //Map number of floors of building *assume one floor is 3m high*
     }
 }
@@ -153,7 +168,10 @@ void building_mapper(std::map<std::string, std::map<unsigned int, std::vector<Po
             }
             second[j] = vertices;
             b[i.first] = second;
+
         }
+        b[i.first].find(0)->second.pop_back();
+        b[i.first].find(1)->second.pop_back();
     }
 }
 
@@ -174,9 +192,27 @@ int main(int argc, const char * argv[]) {
     //Map-> building : { id : building_id , faces : { id :  face_id, vertices : [[v1,...vn]] }}
     building_mapper(buildings,vertices);
 
+    std::map<Point, int> Vertice_mapper;
+    std::vector<Point> ordered_verts;
+    int count=0;
+    for (auto const& b : buildings){
+        for (auto const& f : b.second){
+            for (auto const& v : f.second){
+                if (std::find(ordered_verts.begin(), ordered_verts.end(), v) !=
+                    ordered_verts.end()) {
+                    continue;}
+                ordered_verts.push_back(v);
+                Vertice_mapper[v] = count;
+                count++;
+            }
+        }
+    }
+
+
+
     //auto b = vertices["0503100000020070"];
     //auto a= buildings["0503100000020070"];
-    int count=0;
+
 
 
     //Export to CityJson
@@ -184,19 +220,43 @@ int main(int argc, const char * argv[]) {
     std::fstream fl;
     fl.open(file_out, std::fstream::in | std::fstream::out | std::fstream::trunc);
     fl << "{\n"<<
-          "  \"type\": \"CityJSON\",\n"<<
-          "  \"version\": \"1.0\",\n" <<
-          "  \"CityObjects\": {\n";
+          "\t\"type\": \"CityJSON\",\n"<<
+          "\t\"version\": \"1.0\",\n" <<
+          "\t\"CityObjects\": {\n";
 
     for (auto const& b : buildings){
         fl << "\t\""<<b.first<<"\": {\n";
-        fl << "\t\"type\": \"Building\",\n";
-        fl << "\t\"attributes\": {\n";
-        fl << "\t  \"yearOfConstruction\": " << const_year[b.first]<<",\n";
-        fl << "\t  \"measuredHeight\": " << b.second.at(0).at(0).z_r<<",\n";
-        fl << "\t  \"storeysAboveGround\": " << storeys[b.first]<<",\n";
-    };
+        fl << "\t\t\"type\": \"Building\",\n";
+        fl << "\t\t\"attributes\": {\n";
+        fl << "\t\t\t\"yearOfConstruction\": " << const_year[b.first]<<",\n";
+        fl << "\t\t\t\"measuredHeight\": " << b.second.at(0).at(0).z_r<<",\n";
+        fl << "\t\t\t\"storeysAboveGround\": " << storeys[b.first]<<"},\n";
 
+        fl << "\t\t\"geometry\": [{\n";
+        fl << "\t\t\t\"type\": \"Solid\",\n";
+        fl << "\t\t\t\"lod\": "<<1.2<<",\n";\
+        fl << "\t\t\t\"boundaries\": [[\n";
+        for (auto const& f : b.second) {
+            fl << "\t\t\t[[";
+            for (auto const &v : f.second){
+                if (v==f.second.back()){
+                    fl << Vertice_mapper[v];
+                }
+                else fl << Vertice_mapper[v]<<',';
+            }
+            fl <<"]],\n";
+        }
+        fl <<"]]}]},\n";
+    };
+    fl << "},\n\"vertices\": [\n";
+    for (auto const& v : ordered_verts) {
+        if (v == ordered_verts.back()) {
+            fl << "[" << v.x << "," << v.y << "," << v.z << "]\n";
+        }else fl << "[" << v.x << "," << v.y << "," << v.z << "],\n";
+    }
+    fl << "]\n";
+
+    fl <<"}";
     fl.close();
   return 0;
 }

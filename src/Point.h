@@ -31,6 +31,14 @@ struct Point {
     else if (coordinate == 2) return z;
     else assert(false);
   }
+
+    bool operator<(const Point &o)  const {
+        //return x < o.x || y < o.y || z < o.z;
+
+      return x < o.x || (x == o.x && y < o.y) || (x == o.x && y == o.y && z < o.z);}
+    bool const operator==(const Point &o) const{
+        return x == o.x && y == o.y && z == o.z;
+    }
   /*
   const Point operator+(const Point &other) const {
     return Point(x+other.x, y+other.y, z+other.z);
