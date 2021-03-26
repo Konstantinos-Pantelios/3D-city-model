@@ -185,7 +185,7 @@ int main(int argc, const char * argv[]) {
 
 //TODO: Identify holes in read function where "[[x" -> New attribute on Point class maybe (int hole: number of holes)
 //TODO: Geometry starts and end in the same vertex both on exterior and interior boundary. Take it into account
-//TODO: in the export part, resolve issue with redandunt commas at the last entry.
+
 
     //Read CSV file, mapping vertices to their building
     read(file_in,vertices,const_year, storeys);
@@ -237,17 +237,34 @@ int main(int argc, const char * argv[]) {
         fl << "\t\t\t\"type\": \"Solid\",\n";
         fl << "\t\t\t\"lod\": "<<1.2<<",\n";\
         fl << "\t\t\t\"boundaries\": [[\n";
+
         for (auto const& f : b.second) {
             fl << "\t\t\t[[";
             for (auto const &v : f.second){
                 if (v==f.second.back()){fl << Vertice_mapper[v];}
                 else fl << Vertice_mapper[v]<<',';
             }
-            if (f.second == b.second.at(b.second.size()-1)){fl << "]]\n";}
+            if (f.second == b.second.at(b.second.size()-1)){fl << "]]]],\n";}
             else{fl <<"]],\n";}
         }
-        if (b.first == buildings.rbegin()->first){fl <<"]]}]}\n";}
-        else{fl <<"]]}]},\n";}
+
+        fl<<"\t\t\t\"semantics\": {\n";
+        fl<<"\t\t\t\t\"surfaces\": [\n";
+        fl<<"\t\t\t\t\t{\"type\": \"GroundSurface\"},\n";
+        fl<<"\t\t\t\t\t{\"type\": \"WallSurface\"},\n";
+        fl<<"\t\t\t\t\t{\"type\": \"RoofSurface\"}],\n";
+        fl<<"\t\t\t\t\"values\": [[";
+        for (unsigned int c = 0; c < b.second.size(); c++){
+            if (c==0){fl<<0<<",";}
+            else if (c==1){fl<<2<<",";}
+            else {
+                if (c == b.second.size() - 1) { fl << 1; }
+                else fl << 1 << ",";
+            }
+        }
+
+        if (b.first == buildings.rbegin()->first){fl <<"]]\n}}]}\n";}
+        else{fl <<"]]\n}}]},\n";}
     };
     fl << "},\n\"vertices\": [\n";
     for (auto const& v : ordered_verts) {
