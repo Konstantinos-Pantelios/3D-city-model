@@ -182,9 +182,9 @@ int main(int argc, const char * argv[]) {
     std::map<std::string, std::map<unsigned int, std::vector<Point>>> buildings;
     std::map<std::string, std::string> const_year;
     std::map<std::string, unsigned int> storeys;
-//TODO: Flip ground orientation
-//TODO: Subsample (especially with holes) for testing
-//TODO: Identify holes in read function where "[[x"
+
+//TODO: Identify holes in read function where "[[x" -> New attribute on Point class maybe (int hole: number of holes)
+//TODO: Geometry starts and end in the same vertex both on exterior and interior boundary. Take it into account
 
     //Read CSV file, mapping vertices to their building
     read(file_in,vertices,const_year, storeys);
@@ -250,9 +250,9 @@ int main(int argc, const char * argv[]) {
     };
     fl << "},\n\"vertices\": [\n";
     for (auto const& v : ordered_verts) {
-        if (v == ordered_verts.back()) {
-            fl << "[" << v.x << "," << v.y << "," << v.z << "]\n";
-        }else fl << "[" << v.x << "," << v.y << "," << v.z << "],\n";
+        if (v == ordered_verts.back()) { //"fixed" is used to avoid unexpected rounding of the coordinate values
+            fl << "[" << v.x<<std::fixed << "," << v.y<<std::fixed << "," << v.z<<std::fixed << "]\n";
+        }else fl << "[" << v.x <<std::fixed<< "," << v.y<<std::fixed << "," << v.z<<std::fixed << "],\n";
     }
     fl << "]\n";
 
