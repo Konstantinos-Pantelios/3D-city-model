@@ -3,19 +3,22 @@
 #include<assert.h>
 struct Point {
   float x, y, z, z_r;
+  int hl;
   
   Point() {
     x = 0.0;
     y = 0.0;
     z = 0.0;
     z_r = 0.0;
+    hl = 0;
   }
   
-  Point(const float &x, const float &y, const float &z,const float &z_r) {
+  Point(const float &x, const float &y, const float &z,const float &z_r, const float &hl) {
     this->x = x;
     this->y = y;
     this->z = z;
     this->z_r = z_r;
+    this->hl = hl;
   }
   
   float &operator[](const int &coordinate) {
