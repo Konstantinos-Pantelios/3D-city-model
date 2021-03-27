@@ -257,7 +257,8 @@ int main(int argc, const char * argv[]) {
           "\t\"CityObjects\": {\n";
 
     for (auto const& b : buildings){
-        unsigned int curr_hole=0;
+        unsigned int curr_hole=99999;
+        unsigned int c = 0;
         fl << "\t\""<<b.first<<"\": {\n";
         fl << "\t\t\"type\": \"Building\",\n";
         fl << "\t\t\"attributes\": {\n";
@@ -268,16 +269,24 @@ int main(int argc, const char * argv[]) {
         fl << "\t\t\"geometry\": [{\n";
         fl << "\t\t\t\"type\": \"Solid\",\n";
         fl << "\t\t\t\"lod\": "<<1.2<<",\n";\
-        fl << "\t\t\t\"boundaries\": [[\n";
+        fl << "\t\t\t\"boundaries\": [\n";
 
 
         for (auto const& f : b.second) {
-            fl << "\t\t\t[[";
+
+            fl<<"\t\t\t[[";
             for (auto const &v : f.second){
-                if (v==f.second.back()){fl << Vertice_mapper[v];}
-                else fl << Vertice_mapper[v]<<',';}
-            if (f.second == b.second.at(b.second.size()-1)){fl << "]]]],\n";}
-            else{fl <<"]],\n";}
+                if (curr_hole!=v.hl){
+                    curr_hole=v.hl;
+                    fl << "[";
+                }
+                if (v==f.second.back()){fl << Vertice_mapper[v];} //No comma at last vertex index
+                else fl << Vertice_mapper[v]<<',';} //Commas at itermediate vertex indices
+
+                if (f.second == b.second.at(b.second.size()-1)){fl << "]]]],\n";} //Last face
+                else if (f.second.front().hl != b.second.at(c+1).front().hl){fl <<"]]],\n";}
+                else{fl <<"]],\n";} //Intermediate faces
+                c++;
         }
 
         fl<<"\t\t\t\"semantics\": {\n";
