@@ -103,7 +103,7 @@ void read(const char *file_in, std::map<std::string, std::vector<Point>> &v,
         std::string id = splited_line[1];
         v[id] = verts; //Map vertices of building
         constr[id]=slash_spliter(splited_line[8])[0]; //Map construction year of building
-        floors[id]=floor(verts.back().z_r/3); //Map number of floors of building *assume one floor is 3m high*
+        floors[id]=floor((verts.back().z_r-verts.back().z)/3); //Map number of floors of building *assume one floor is 3m high*
     }
 }
 
@@ -148,7 +148,7 @@ void building_mapper(std::map<std::string, std::map<unsigned int, std::vector<Po
             std::vector<Point> vertices;
             if (j == 0) { //First face -> ground face (CW)
                 for (int k = i.second.size()-1; k >= 0; k--) { //CW orientated face
-                    if (i.second[k].hl!=0){continue;} // Checking whether a hole vertex exists and skips it
+                    //if (i.second[k].hl!=0){continue;} // Checking whether a hole vertex exists and skips it
                     vertices.push_back(i.second[k]);
                 }
                 for (unsigned int k = 0; k < i.second.size(); k++) { //temporary CCW orientated ground face to set the walls.
@@ -160,7 +160,7 @@ void building_mapper(std::map<std::string, std::map<unsigned int, std::vector<Po
 
                 for (unsigned int k = 0; k < i.second.size(); k++) {
                     temp_roof.push_back(Point(i.second[k].x,i.second[k].y,i.second[k].z_r,i.second[k].z,i.second[k].hl));
-                    if (i.second[k].hl!=0){ continue;} // Checking whether a hole vertex exists and skips it
+                    //if (i.second[k].hl!=0){ continue;} // Checking whether a hole vertex exists and skips it
                     vertices.push_back(Point(i.second[k].x,i.second[k].y,i.second[k].z_r,i.second[k].z,i.second[k].hl));
                 }
             }
@@ -257,13 +257,15 @@ int main(int argc, const char * argv[]) {
           "\t\"CityObjects\": {\n";
 
     for (auto const& b : buildings){
+         //Contains Points of holes
+        int hole_n=-1;
         unsigned int curr_hole=99999;
-        unsigned int c = 0;
+
         fl << "\t\""<<b.first<<"\": {\n";
         fl << "\t\t\"type\": \"Building\",\n";
         fl << "\t\t\"attributes\": {\n";
         fl << "\t\t\t\"yearOfConstruction\": " << const_year[b.first]<<",\n";
-        fl << "\t\t\t\"measuredHeight\": " << b.second.at(0).at(0).z_r<<",\n";
+        fl << "\t\t\t\"measuredHeight\": " << b.second.at(0).at(0).z_r -  b.second.at(0).at(0).z<<",\n";
         fl << "\t\t\t\"storeysAboveGround\": " << storeys[b.first]<<"},\n";
 
         fl << "\t\t\"geometry\": [{\n";
@@ -273,22 +275,96 @@ int main(int argc, const char * argv[]) {
 
 
         for (auto const& f : b.second) {
+            std::vector<std::vector<Point>> holes;
+            std::vector<Point> curr_hole_vert = {f.second.front()}; //Initialize vector for conditional use at line 290
+            bool lever=false;
+            fl<<"\t\t\t[";
 
-            fl<<"\t\t\t[[";
             for (auto const &v : f.second){
-                if (curr_hole!=v.hl){
-                    curr_hole=v.hl;
-                    fl << "[";
+
+                if (curr_hole!=v.hl) {
+                    curr_hole = v.hl;
                 }
+                    if (curr_hole_vert.back().hl==curr_hole){
+                        if (!lever){curr_hole_vert.pop_back();lever=true;} //Remove the initalized value to avoid duplicate entry
+                        curr_hole_vert.push_back(v);} //When traversing a hole vertex I want to append it in the list but exlude it from writing it at this moment
+
+                    else {holes.push_back(curr_hole_vert); curr_hole_vert = {}; curr_hole_vert.push_back(v);} //When a new hole or the absence of hole is detected I want the previous vector stored in another vector and reset it.
+               if (v == f.second.back()) {holes.push_back(curr_hole_vert);}
+
+
+/*
                 if (v==f.second.back()){fl << Vertice_mapper[v];} //No comma at last vertex index
                 else fl << Vertice_mapper[v]<<',';} //Commas at itermediate vertex indices
 
-                if (f.second == b.second.at(b.second.size()-1)){fl << "]]]],\n";} //Last face
-                else if (f.second.front().hl != b.second.at(c+1).front().hl){fl <<"]]],\n";}
+
+                if (f.second == b.second.at(b.second.size()-1)){   //Last face
+                    fl << "]]]],\n";}
+                else if (f.second.front().hl != b.second.at(c+1).front().hl) {
+                    if (f.second == b.second.at(0)) {
+                        fl << "],[";
+                        for (auto const h : holes) {
+                            for (auto const h_ : h) {
+                                if (h_ == h.back()) { fl << Vertice_mapper[h_]; }
+                                else fl << Vertice_mapper[h_] << ",";
+                            }
+                        }
+                        fl << "]],\n";
+                    } //else { fl << "]]],\n"; }
+                else {fl << "]]],\n";}}
                 else{fl <<"]],\n";} //Intermediate faces
                 c++;
-        }
+*/
 
+        }curr_hole=0;
+
+
+            if (f.second == b.second.at(0) && f.second.front().hl!=0){//For ground
+                for (int face = holes.size()-1; face >= 0; face--){
+                    fl << "[";
+                    for (auto const& v : holes[face]) {
+                        if (v == holes[face].back()) { fl << Vertice_mapper[v]; } //No comma at last vertex index
+                        else fl << Vertice_mapper[v] << ',';} //Commas at itermediate vertex indices
+                    if (holes[face]==holes[0]){fl<<"]],\n";}
+                    else {fl<<"],";}
+                }
+            }
+
+else {unsigned int c = 0;
+
+                for (auto const &face : holes) {
+
+                    if (holes[0][0].hl != 0) {
+                        curr_hole = face.front().hl;
+                        fl<<"[";
+                        if (face.)
+                        for (auto const &v : face) {
+                            if (v == face.back()) { fl << Vertice_mapper[v]; } //No comma at last vertex index
+                            else fl << Vertice_mapper[v] << ',';}
+
+
+                    } else {
+                        fl << "[";
+                        for (auto const &v : face) {
+                            if (v == face.back()) { fl << Vertice_mapper[v]; } //No comma at last vertex index
+                            else fl << Vertice_mapper[v] << ',';
+                        } //Commas at itermediate vertex indices
+                        if (face == holes.back()) {
+                            if (holes.size() > 1) {fl << "]],";} //Roof face with hole - last element
+                            else fl << "]";
+                            if (holes.size() == 1) {
+                                if (f.second == b.second.at(b.second.size() - 1)) { fl << "]"; }
+                                else if (holes[c].front().hl!=curr_hole){ fl << "]],"; }
+                                else fl << "],";
+                            }
+                            fl << "\n";
+                        } else fl << "],";
+                    }
+                    c++;
+                }
+            }
+        }
+        fl<<"\t\t\t],\n";
         fl<<"\t\t\t\"semantics\": {\n";
         fl<<"\t\t\t\t\"surfaces\": [\n";
         fl<<"\t\t\t\t\t{\"type\": \"GroundSurface\"},\n";
