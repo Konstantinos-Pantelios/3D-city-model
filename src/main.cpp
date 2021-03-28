@@ -268,7 +268,7 @@ int main(int argc, const char * argv[]) {
                 for (int i = holes.size()-1; i >= 0; i--){
                     if (holes.size()>1) {
                         if (i == holes.size()-1) { faces.Exterior = holes[i]; }
-                        else { faces.Interior = holes[i]; }
+                        else { faces.Interior.push_back(holes[i]); }
                     }else {faces.Exterior = holes[i];}
                 }
             }
@@ -276,7 +276,7 @@ int main(int argc, const char * argv[]) {
                 for (unsigned int  i = 0; i < holes.size(); i++){
                     if (holes.size()>1) {
                         if (i == 0) { faces.Exterior = holes[i]; }
-                        else { faces.Interior = holes[i]; }
+                        else { faces.Interior.push_back(holes[i]); }
                     }else {faces.Exterior = holes[i];}
                     if (ordered_verts[holes[i].front()].hl!=0 && holes.size()==1){faces.hole_no=ordered_verts[holes[i].front()].hl;}
             }}

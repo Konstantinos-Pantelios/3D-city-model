@@ -71,14 +71,14 @@ struct Point {
 
 struct Face{
     std::vector<unsigned int> Exterior;
-    std::vector<unsigned int> Interior;
+    std::vector<std::vector<unsigned int>> Interior;
     int hole_no;
     Face() {
         Exterior = {};
         Interior = {};
         hole_no = 0;
     }
-    Face(const std::vector<unsigned int> &Exterior, const std::vector<unsigned int> &Interior, const int& hole_no) {
+    Face(const std::vector<unsigned int> &Exterior, const std::vector<std::vector<unsigned int>> &Interior, const int& hole_no) {
         this->Exterior = Exterior;
         this->Interior = Interior;
         this->hole_no = hole_no;
