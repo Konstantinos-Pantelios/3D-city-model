@@ -134,10 +134,11 @@ std::vector<double> cornerpoints(std::vector<std::vector<double>> v, const std::
 
 void building_mapper(std::map<std::string, std::map<unsigned int, std::vector<Point>>>& b,std::map<std::string, std::vector<Point>>& v){
     Point bottom1, bottom2, up1, up2;
-    unsigned int curr_hole = 0;
-    unsigned int c_hole_start =0;
+
 
     for (auto const& i : v){
+        unsigned int curr_hole = 0;
+        unsigned int c_hole_start =0;
 
         std::map<unsigned int, std::vector<Point>> second;
         std::vector<Point> CCW_vert;
@@ -208,7 +209,7 @@ void building_mapper(std::map<std::string, std::map<unsigned int, std::vector<Po
 void cjioDS(std::vector<std::vector<Face>>& all,
             std::map<std::string, std::map<unsigned int, std::vector<Point>>>& buildings,
             std::map<Point, int>& Vertice_mapper,
-            std::vector<Point>& ordered_verts){
+            std::vector<Point> ordered_verts){
 
     for (auto const& b : buildings){
         Face faces;
@@ -257,14 +258,14 @@ void cjioDS(std::vector<std::vector<Face>>& all,
 }
 
 int main(int argc, const char * argv[]) {
-    const char *file_in = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/testCSV.csv";
+    const char *file_in = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/tuCSV/tudcampus_removed.csv";
     const char *file_out = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/test.json";
     std::map<std::string, std::vector<Point>> vertices;
     std::map<std::string, std::map<unsigned int, std::vector<Point>>> buildings;
     std::map<std::string, std::string> const_year;
     std::map<std::string, unsigned int> storeys;
 
-//TODO: Identify holes in read function where "[[x" -> New attribute on Point class maybe (int hole: number of holes)
+
 //TODO: Check case of circular building.
 
 
@@ -309,6 +310,9 @@ int main(int argc, const char * argv[]) {
 
     int b_counter=0;
     for (auto const& b : buildings){
+        if(b.first=="0503100000000131"){
+            int a = 0;
+        }
         int f_counter=0;
         int hole_n=-1;
         unsigned int curr_hole=99999;
@@ -341,6 +345,7 @@ int main(int argc, const char * argv[]) {
         }
         else {
             //fl << "\t\t\t[\n"; //Open bracket of EXTERIOR SHELL of solid
+
             auto hole_num = 0;
             bool lever1 = false;
             bool lever2 = false;
@@ -422,6 +427,7 @@ int main(int argc, const char * argv[]) {
     }
     fl << "]\n";
     fl <<"}";
+
     fl.close();
   return 0;
 }

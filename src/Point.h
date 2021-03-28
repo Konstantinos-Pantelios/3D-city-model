@@ -13,7 +13,7 @@ struct Point {
     hl = 0;
   }
   
-  Point(const float &x, const float &y, const float &z,const float &z_r, const float &hl) {
+  Point(const float &x, const float &y, const float &z,const float &z_r, const int &hl) {
     this->x = x;
     this->y = y;
     this->z = z;
