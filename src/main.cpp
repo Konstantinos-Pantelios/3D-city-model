@@ -306,6 +306,7 @@ int main(int argc, const char * argv[]) {
     fl << "{\n"<<
           "\t\"type\": \"CityJSON\",\n"<<
           "\t\"version\": \"1.0\",\n" <<
+          "\t\"metadata\": { \"referenceSystem\": \"urn:ogc:def:crs:EPSG::7415\"},\n"
           "\t\"CityObjects\": {\n";
 
     int b_counter=0;
