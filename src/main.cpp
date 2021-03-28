@@ -239,7 +239,51 @@ int main(int argc, const char * argv[]) {
             }
         }
     }
+    std::vector<std::vector<Face>> all;
+    for (auto const& b : buildings){
+        Face faces;
+        std::vector<Face> build;
+        unsigned int at_face_x=0;
 
+        for (auto const& f : b.second) {
+            Face faces;
+            unsigned int curr_hole=f.second.front().hl;
+            std::vector<std::vector<unsigned int>> holes;
+            std::vector<unsigned int> temp; //Initialize vector for conditional use at line 290
+            bool lever=false;
+                for (auto const &v : f.second){
+                    if (v.hl==curr_hole) {
+                        temp.push_back(Vertice_mapper[v]);
+                    }
+                    else {
+                        holes.push_back(temp);
+                        curr_hole=v.hl;
+                        temp={};
+                        temp.push_back(Vertice_mapper[v]);
+                    }
+                }
+            holes.push_back(temp);
+            if (at_face_x==0){
+                at_face_x++;
+                for (int i = holes.size()-1; i >= 0; i--){
+                    if (holes.size()>1) {
+                        if (i == holes.size()-1) { faces.Exterior = holes[i]; }
+                        else { faces.Interior = holes[i]; }
+                    }else {faces.Exterior = holes[i];}
+                }
+            }
+            else {
+                for (unsigned int  i = 0; i < holes.size(); i++){
+                    if (holes.size()>1) {
+                        if (i == 0) { faces.Exterior = holes[i]; }
+                        else { faces.Interior = holes[i]; }
+                    }else {faces.Exterior = holes[i];}
+                    if (ordered_verts[holes[i].front()].hl!=0 && holes.size()==1){faces.hole_no=ordered_verts[holes[i].front()].hl;}
+            }}
+            build.push_back(faces);
+            }
+        all.push_back(build);
+    }
 
 
     //auto b = vertices["0503100000020070"];
@@ -337,7 +381,7 @@ else {unsigned int c = 0;
                     if (holes[0][0].hl != 0) {
                         curr_hole = face.front().hl;
                         fl<<"[";
-                        if (face.)
+
                         for (auto const &v : face) {
                             if (v == face.back()) { fl << Vertice_mapper[v]; } //No comma at last vertex index
                             else fl << Vertice_mapper[v] << ',';}
