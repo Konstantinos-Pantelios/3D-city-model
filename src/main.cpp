@@ -205,6 +205,57 @@ void building_mapper(std::map<std::string, std::map<unsigned int, std::vector<Po
     }
 }
 
+void cjioDS(std::vector<std::vector<Face>>& all,
+            std::map<std::string, std::map<unsigned int, std::vector<Point>>>& buildings,
+            std::map<Point, int>& Vertice_mapper,
+            std::vector<Point>& ordered_verts){
+
+    for (auto const& b : buildings){
+        Face faces;
+        std::vector<Face> build;
+        unsigned int at_face_x=0;
+
+        for (auto const& f : b.second) {
+            Face faces;
+            unsigned int curr_hole=f.second.front().hl;
+            std::vector<std::vector<unsigned int>> holes;
+            std::vector<unsigned int> temp; //Initialize vector for conditional use at line 290
+            bool lever=false;
+            for (auto const &v : f.second){
+                if (v.hl==curr_hole) {
+                    temp.push_back(Vertice_mapper[v]);
+                }
+                else {
+                    holes.push_back(temp);
+                    curr_hole=v.hl;
+                    temp={};
+                    temp.push_back(Vertice_mapper[v]);
+                }
+            }
+            holes.push_back(temp);
+            if (at_face_x==0){
+                at_face_x++;
+                for (int i = holes.size()-1; i >= 0; i--){
+                    if (holes.size()>1) {
+                        if (i == holes.size()-1) { faces.Exterior = holes[i]; }
+                        else { faces.Interior.push_back(holes[i]); }
+                    }else {faces.Exterior = holes[i];}
+                }
+            }
+            else {
+                for (unsigned int  i = 0; i < holes.size(); i++){
+                    if (holes.size()>1) {
+                        if (i == 0) { faces.Exterior = holes[i]; }
+                        else { faces.Interior.push_back(holes[i]); }
+                    }else {faces.Exterior = holes[i];}
+                    if (ordered_verts[holes[i].front()].hl!=0 && holes.size()==1){faces.hole_no=ordered_verts[holes[i].front()].hl;}
+                }}
+            build.push_back(faces);
+        }
+        all.push_back(build);
+    }
+}
+
 int main(int argc, const char * argv[]) {
     const char *file_in = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/testCSV.csv";
     const char *file_out = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/test.json";
@@ -214,7 +265,6 @@ int main(int argc, const char * argv[]) {
     std::map<std::string, unsigned int> storeys;
 
 //TODO: Identify holes in read function where "[[x" -> New attribute on Point class maybe (int hole: number of holes)
-//TODO: Geometry starts and end in the same vertex both on exterior and interior boundary. Take it into account
 //TODO: Check case of circular building.
 
 
@@ -239,55 +289,12 @@ int main(int argc, const char * argv[]) {
             }
         }
     }
+
     std::vector<std::vector<Face>> all;
-    for (auto const& b : buildings){
-        Face faces;
-        std::vector<Face> build;
-        unsigned int at_face_x=0;
-
-        for (auto const& f : b.second) {
-            Face faces;
-            unsigned int curr_hole=f.second.front().hl;
-            std::vector<std::vector<unsigned int>> holes;
-            std::vector<unsigned int> temp; //Initialize vector for conditional use at line 290
-            bool lever=false;
-                for (auto const &v : f.second){
-                    if (v.hl==curr_hole) {
-                        temp.push_back(Vertice_mapper[v]);
-                    }
-                    else {
-                        holes.push_back(temp);
-                        curr_hole=v.hl;
-                        temp={};
-                        temp.push_back(Vertice_mapper[v]);
-                    }
-                }
-            holes.push_back(temp);
-            if (at_face_x==0){
-                at_face_x++;
-                for (int i = holes.size()-1; i >= 0; i--){
-                    if (holes.size()>1) {
-                        if (i == holes.size()-1) { faces.Exterior = holes[i]; }
-                        else { faces.Interior.push_back(holes[i]); }
-                    }else {faces.Exterior = holes[i];}
-                }
-            }
-            else {
-                for (unsigned int  i = 0; i < holes.size(); i++){
-                    if (holes.size()>1) {
-                        if (i == 0) { faces.Exterior = holes[i]; }
-                        else { faces.Interior.push_back(holes[i]); }
-                    }else {faces.Exterior = holes[i];}
-                    if (ordered_verts[holes[i].front()].hl!=0 && holes.size()==1){faces.hole_no=ordered_verts[holes[i].front()].hl;}
-            }}
-            build.push_back(faces);
-            }
-        all.push_back(build);
-    }
+    cjioDS(all, buildings, Vertice_mapper, ordered_verts);
 
 
-    //auto b = vertices["0503100000020070"];
-    //auto a= buildings["0503100000020070"];
+
 
 
 
@@ -300,8 +307,9 @@ int main(int argc, const char * argv[]) {
           "\t\"version\": \"1.0\",\n" <<
           "\t\"CityObjects\": {\n";
 
+    int b_counter=0;
     for (auto const& b : buildings){
-         //Contains Points of holes
+        int f_counter=0;
         int hole_n=-1;
         unsigned int curr_hole=99999;
 
@@ -315,99 +323,72 @@ int main(int argc, const char * argv[]) {
         fl << "\t\t\"geometry\": [{\n";
         fl << "\t\t\t\"type\": \"Solid\",\n";
         fl << "\t\t\t\"lod\": "<<1.2<<",\n";\
-        fl << "\t\t\t\"boundaries\": [\n";
+        fl << "\t\t\t\"boundaries\": [\n"; //Open bracket of Solid
 
+        if (all[b_counter].front().Interior.empty()){ //No-hole case
+            fl<<"\t\t\t[\n"; //Open bracket of EXTERIOR SHELL of solid
 
-        for (auto const& f : b.second) {
-            std::vector<std::vector<Point>> holes;
-            std::vector<Point> curr_hole_vert = {f.second.front()}; //Initialize vector for conditional use at line 290
-            bool lever=false;
-            fl<<"\t\t\t[";
-
-            for (auto const &v : f.second){
-
-                if (curr_hole!=v.hl) {
-                    curr_hole = v.hl;
-                }
-                    if (curr_hole_vert.back().hl==curr_hole){
-                        if (!lever){curr_hole_vert.pop_back();lever=true;} //Remove the initalized value to avoid duplicate entry
-                        curr_hole_vert.push_back(v);} //When traversing a hole vertex I want to append it in the list but exlude it from writing it at this moment
-
-                    else {holes.push_back(curr_hole_vert); curr_hole_vert = {}; curr_hole_vert.push_back(v);} //When a new hole or the absence of hole is detected I want the previous vector stored in another vector and reset it.
-               if (v == f.second.back()) {holes.push_back(curr_hole_vert);}
-
-
-/*
-                if (v==f.second.back()){fl << Vertice_mapper[v];} //No comma at last vertex index
-                else fl << Vertice_mapper[v]<<',';} //Commas at itermediate vertex indices
-
-
-                if (f.second == b.second.at(b.second.size()-1)){   //Last face
-                    fl << "]]]],\n";}
-                else if (f.second.front().hl != b.second.at(c+1).front().hl) {
-                    if (f.second == b.second.at(0)) {
-                        fl << "],[";
-                        for (auto const h : holes) {
-                            for (auto const h_ : h) {
-                                if (h_ == h.back()) { fl << Vertice_mapper[h_]; }
-                                else fl << Vertice_mapper[h_] << ",";
-                            }
-                        }
-                        fl << "]],\n";
-                    } //else { fl << "]]],\n"; }
-                else {fl << "]]],\n";}}
-                else{fl <<"]],\n";} //Intermediate faces
-                c++;
-*/
-
-        }curr_hole=0;
-
-
-            if (f.second == b.second.at(0) && f.second.front().hl!=0){//For ground
-                for (int face = holes.size()-1; face >= 0; face--){
-                    fl << "[";
-                    for (auto const& v : holes[face]) {
-                        if (v == holes[face].back()) { fl << Vertice_mapper[v]; } //No comma at last vertex index
-                        else fl << Vertice_mapper[v] << ',';} //Commas at itermediate vertex indices
-                    if (holes[face]==holes[0]){fl<<"]],\n";}
-                    else {fl<<"],";}
-                }
-            }
-
-else {unsigned int c = 0;
-
-                for (auto const &face : holes) {
-
-                    if (holes[0][0].hl != 0) {
-                        curr_hole = face.front().hl;
-                        fl<<"[";
-
-                        for (auto const &v : face) {
-                            if (v == face.back()) { fl << Vertice_mapper[v]; } //No comma at last vertex index
-                            else fl << Vertice_mapper[v] << ',';}
-
-
-                    } else {
-                        fl << "[";
-                        for (auto const &v : face) {
-                            if (v == face.back()) { fl << Vertice_mapper[v]; } //No comma at last vertex index
-                            else fl << Vertice_mapper[v] << ',';
-                        } //Commas at itermediate vertex indices
-                        if (face == holes.back()) {
-                            if (holes.size() > 1) {fl << "]],";} //Roof face with hole - last element
-                            else fl << "]";
-                            if (holes.size() == 1) {
-                                if (f.second == b.second.at(b.second.size() - 1)) { fl << "]"; }
-                                else if (holes[c].front().hl!=curr_hole){ fl << "]],"; }
-                                else fl << "],";
-                            }
-                            fl << "\n";
-                        } else fl << "],";
-                    }
-                    c++;
-                }
+            for (auto const& f : all[b_counter]) {
+                fl<<"\t\t\t\t[["; //MultiSurface brackets - Always double at No-hole case as there wont be any interior boundaries.
+                for (auto const& v : f.Exterior){
+                    if (v==f.Exterior.back()){fl<<v;} //Last vertex indicex of face does not need a comma
+                    else fl<<v<<",";} //Intermediary vertec indices of face DOES need a comma
+                if (f.Exterior == all[b_counter].back().Exterior) {
+                    fl<<"]]\n"; //MultiSurface brackets - Always double at No-hole case as there wont be any interior boundaries.
+                fl<<"\t\t\t\t\t\t\t\t]\n";} //Last face of building needs to close the solids exterior boundary
+                else fl<<"]],\n"; ////MultiSurface brackets - Always double at No-hole case as there wont be any interior boundaries.
             }
         }
+        else {
+            //fl << "\t\t\t[\n"; //Open bracket of EXTERIOR SHELL of solid
+            auto hole_num = 0;
+            bool lever1 = false;
+            bool lever2 = false;
+            for (auto const &f : all[b_counter]) {
+
+
+
+///Writting the Exterior boundary of the Multisurface
+                if (all[b_counter][f_counter-1].hole_no != hole_num ){
+                    hole_num = all[b_counter][f_counter+1].hole_no;
+                    lever1 = true;}
+                else lever1 = false;
+
+                if (all[b_counter][f_counter+1].hole_no != hole_num ){
+                    hole_num = all[b_counter][f_counter+1].hole_no;
+                    lever2 = true;}
+                else lever2 = false;
+
+                if (lever1){fl<< "\t\t\t[\n\t\t\t\t[[";}
+                else {fl<< "\t\t\t\t[[";}
+
+                for (auto const &v : f.Exterior) {
+
+                    if (v == f.Exterior.back() && !f.Interior.empty()) { fl << v <<"],"; } //Last vertex indicex of face does not need a comma
+                    else if (v == f.Exterior.back() && f.Interior.empty()) {
+                        if (f.Exterior == all[b_counter].back().Exterior) { fl << v << "]]\n"; }
+                        else if (lever2) { fl << v << "]]\n\t\t\t\t\t\t\t\t\t],\n"; lever2=false; }
+                        else { fl << v << "]],\n"; }
+                    }
+                    else fl << v << ",";} //Intermediary vertec indices of face DOES need a comma
+
+//Writting the Interior boundary of the Multisurface
+                for (auto const &in_mulit : f.Interior) {
+                    fl<<"[";
+                    for (auto const &in : in_mulit) {
+                        if (in == in_mulit.back()) {fl << in; } //Last vertex indicex of face does not need a comma
+                        else fl << in << ",";} //Intermediary vertec indices of face DOES need a comma
+                    if (in_mulit == f.Interior.back()) {fl<< "]],\n";}
+                    else fl << "],\n";}
+
+
+                if (f.Exterior == all[b_counter].back().Exterior) {
+                    fl<<"\t\t\t\t\t\t\t\t\t]\n";}
+
+                f_counter++;
+            }
+        }
+
         fl<<"\t\t\t],\n";
         fl<<"\t\t\t\"semantics\": {\n";
         fl<<"\t\t\t\t\"surfaces\": [\n";
@@ -422,10 +403,18 @@ else {unsigned int c = 0;
                     else fl << 1 << ",";}
         }
 
-        if (b.first == buildings.rbegin()->first){fl <<"]]\n}}]}\n";}
-        else{fl <<"]]\n}}]},\n";}
+        if (b.first == buildings.rbegin()->first){
+            fl <<"]]\n";
+            fl<<"\t\t\t\t}\n";
+            fl<<"\t\t\t}]\n";
+            fl<<"\t\t}\n";}
+        else{fl <<"]]\n";
+            fl<<"\t\t\t\t}\n";
+            fl<<"\t\t\t}]\n";
+            fl<<"\t\t},\n";}
+        b_counter++;
     };
-    fl << "},\n\"vertices\": [\n";
+    fl << "\t},\n\"vertices\": [\n";
     for (auto const& v : ordered_verts) {
         if (v == ordered_verts.back()) { //"fixed" is used to avoid unexpected rounding of the coordinate values
             fl << "[" << v.x<<std::fixed << "," << v.y<<std::fixed << "," << v.z<<std::fixed << "]\n";
