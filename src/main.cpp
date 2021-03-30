@@ -107,30 +107,6 @@ void read(const char *file_in, std::map<std::string, std::vector<Point>> &v,
     }
 }
 
-std::vector<double> cornerpoints(std::vector<std::vector<double>> v, const std::string& minmax){
-    if (minmax == "max"){
-        float maxx = -2000.0;
-        float maxy = -2000.0;
-        float maxz = -2000.0;
-        for (auto & i : v) {
-            if (i[0] >= maxx) maxx = i[0];
-            if (i[1] >= maxy) maxy = i[1];
-            if (i[2] >= maxz) maxz = i[2];
-        }
-        return {maxx,maxy,maxz}; //+1 to go out of bounds
-    }
-    else if (minmax == "min") {
-        float minx = 2000.0;
-        float miny = 2000.0;
-        float minz = 2000.0;
-        for (auto & i : v) {
-            if (i[0] <= minx) minx = i[0];
-            if (i[1] <= miny) miny = i[1];
-            if (i[2] <= minz) minz = i[2];
-        }
-        return {minx,miny,minz}; //-1 to go out of bounds
-    }
-}
 
 void building_mapper(std::map<std::string, std::map<unsigned int, std::vector<Point>>>& b,std::map<std::string, std::vector<Point>>& v){
     Point bottom1, bottom2, up1, up2;
@@ -312,9 +288,7 @@ int main(int argc, const char * argv[]) {
 
     int b_counter=0;
     for (auto const& b : buildings){
-        if(b.first=="0503100000000131"){
-            int a = 0;
-        }
+
         int f_counter=0;
         int hole_n=-1;
         unsigned int curr_hole=99999;
@@ -356,19 +330,7 @@ int main(int argc, const char * argv[]) {
 
 
 ///Writting the Exterior boundary of the Multisurface
-  /*              if (all[b_counter][f_counter-1].hole_no != hole_num ){
-                    hole_num = all[b_counter][f_counter+1].hole_no;
-                    lever1 = true;}
-                else lever1 = false;
 
-                if (all[b_counter][f_counter+1].hole_no != hole_num ){
-                    hole_num = all[b_counter][f_counter+1].hole_no;
-                    lever2 = true;}
-                else lever2 = false;
-
-                if (lever1){fl<< "\t\t\t[\n\t\t\t\t[[";}
-                else {fl<< "\t\t\t\t[[";}
-*/
                 fl<<"\t\t\t[["; //Open bracket of EXTERIOR SHELL of solid
                 for (auto const &v : f.Exterior) {
                     if (v == f.Exterior.back() && !f.Interior.empty()) { fl << v <<"],"; } //Last vertex indicex of face does not need a comma
@@ -424,8 +386,8 @@ int main(int argc, const char * argv[]) {
     fl << "\t},\n\"vertices\": [\n";
     for (auto const& v : ordered_verts) {
         if (v == ordered_verts.back()) { //"fixed" is used to avoid unexpected rounding of the coordinate values
-            fl << "[" << v.x<<std::fixed << "," << v.y<<std::fixed << "," << v.z<<std::fixed << "]\n";
-        }else fl << "[" << v.x <<std::fixed<< "," << v.y<<std::fixed << "," << v.z<<std::fixed << "],\n";
+            fl << "[" << std::fixed << v.x << "," << v.y << "," << v.z << "]\n";
+        }else fl << "[" << std::fixed << v.x << "," << v.y << "," << v.z<< "],\n";
     }
     fl << "]\n";
     fl <<"}";
