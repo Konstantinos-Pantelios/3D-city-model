@@ -258,7 +258,7 @@ void cjioDS(std::vector<std::vector<Face>>& all,
 }
 
 int main(int argc, const char * argv[]) {
-    const char *file_in = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/tuCSV/tudcampus_removed.csv";
+    const char *file_in = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/CSV/debug.csv";
     const char *file_out = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/test.json";
     std::map<std::string, std::vector<Point>> vertices;
     std::map<std::string, std::map<unsigned int, std::vector<Point>>> buildings;
@@ -266,7 +266,7 @@ int main(int argc, const char * argv[]) {
     std::map<std::string, unsigned int> storeys;
 
 
-//TODO: Check case of circular building.
+//TODO: Adjust "values" to holes
 
 
     //Read CSV file, mapping vertices to their building
@@ -345,7 +345,7 @@ int main(int argc, const char * argv[]) {
             }
         }
         else {
-            //fl << "\t\t\t[\n"; //Open bracket of EXTERIOR SHELL of solid
+            fl << "\t\t\t[\n"; //Open bracket of EXTERIOR SHELL of solid
 
             auto hole_num = 0;
             bool lever1 = false;
@@ -355,7 +355,7 @@ int main(int argc, const char * argv[]) {
 
 
 ///Writting the Exterior boundary of the Multisurface
-                if (all[b_counter][f_counter-1].hole_no != hole_num ){
+  /*              if (all[b_counter][f_counter-1].hole_no != hole_num ){
                     hole_num = all[b_counter][f_counter+1].hole_no;
                     lever1 = true;}
                 else lever1 = false;
@@ -367,9 +367,9 @@ int main(int argc, const char * argv[]) {
 
                 if (lever1){fl<< "\t\t\t[\n\t\t\t\t[[";}
                 else {fl<< "\t\t\t\t[[";}
-
+*/
+                fl<<"\t\t\t[["; //Open bracket of EXTERIOR SHELL of solid
                 for (auto const &v : f.Exterior) {
-
                     if (v == f.Exterior.back() && !f.Interior.empty()) { fl << v <<"],"; } //Last vertex indicex of face does not need a comma
                     else if (v == f.Exterior.back() && f.Interior.empty()) {
                         if (f.Exterior == all[b_counter].back().Exterior) { fl << v << "]]\n"; }
