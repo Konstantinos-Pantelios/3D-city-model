@@ -2,6 +2,7 @@
 #include <fstream>
 #include <vector>
 #include <sstream>
+#include <iomanip>
 
 #include "boost/property_tree/ptree.hpp"
 #include "boost/property_tree/json_parser.hpp"
@@ -81,13 +82,12 @@ void read(const char *file_in, std::map<std::string, std::vector<Point>> &v,
             size_t j = 0;
             for ( ; j < splited_line[i].length(); j++ ){ if ( isdigit(splited_line[i][j]) ) break; }
             splited_line[i] = splited_line[i].substr(j, splited_line[i].length() - j );
-            double id_x = atof(splited_line[i].c_str());
-
+            double id_x = stod(splited_line[i],0);
             //Get Y coordinate from next line
             j=0;
             for ( ; j < splited_line[i+1].length(); j++ ){ if ( isdigit(splited_line[i+1][j]) ) break; }
             splited_line[i+1] = splited_line[i+1].substr(j, splited_line[i+1].length() - j );
-            double id_y = atof(splited_line[i+1].c_str());
+            double id_y = stod(splited_line[i+1],0); //atof(splited_line[i+1].c_str());
 
 
             //Get Z value from ground's height
@@ -274,6 +274,7 @@ int main(int argc, const char * argv[]) {
 
     //Map-> building : { id : building_id , faces : { id :  face_id, vertices : [[v1,...vn]] }}
     building_mapper(buildings,vertices);
+    std::cout << std::setprecision(16) << buildings.find("0503100000004585")->second.at(150).at(0).x;
 
     std::map<Point, int> Vertice_mapper;
     std::vector<Point> ordered_verts;

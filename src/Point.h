@@ -2,7 +2,7 @@
 #define Point_h
 #include<assert.h>
 struct Point {
-  float x, y, z, z_r;
+  double x, y, z, z_r;
   int hl;
   
   Point() {
@@ -13,7 +13,7 @@ struct Point {
     hl = 0;
   }
   
-  Point(const float &x, const float &y, const float &z,const float &z_r, const int &hl) {
+  Point(const double &x, const double &y, const double &z,const double &z_r, const int &hl) {
     this->x = x;
     this->y = y;
     this->z = z;
@@ -21,12 +21,7 @@ struct Point {
     this->hl = hl;
   }
   
-  float &operator[](const int &coordinate) {
-    if (coordinate == 0) return x;
-    else if (coordinate == 1) return y;
-    else if (coordinate == 2) return z;
-    else assert(false);
-  }
+
   
   float operator[](const int &coordinate) const {
     if (coordinate == 0) return x;
