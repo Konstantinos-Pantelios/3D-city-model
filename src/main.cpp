@@ -72,7 +72,7 @@ void read(const char *file_in, std::map<std::string, std::vector<Point>> &v,
         std::vector<Point> verts;
         //auto q = spliter2(splited_line[19]);
         unsigned int hole = 0;
-        for (unsigned int i = 16; i<splited_line.size(); i=i+2 ) {//Start from 16th element (from wich the coordinate start and continue with step 2
+        for (unsigned int i = 16; i<splited_line.size(); i=i+2 ) {// +3 //Start from 16th element (from wich the coordinate start and continue with step 2
 
             if(splited_line[i-1].substr( splited_line[i-1].length() - 2 ) == "]]" && splited_line[i].substr(0,2) == "[["){
                 verts.pop_back(); //removes the last "closing" vertex as is redundant. -> Polygon(v1,v2,v3,v4,v1)
@@ -88,7 +88,12 @@ void read(const char *file_in, std::map<std::string, std::vector<Point>> &v,
             for ( ; j < splited_line[i+1].length(); j++ ){ if ( isdigit(splited_line[i+1][j]) ) break; }
             splited_line[i+1] = splited_line[i+1].substr(j, splited_line[i+1].length() - j );
             double id_y = stod(splited_line[i+1],0); //atof(splited_line[i+1].c_str());
-
+/*
+            j=0;
+            for ( ; j < splited_line[i+2].length(); j++ ){ if ( isdigit(splited_line[i+2][j]) ) break; }
+            splited_line[i+2] = splited_line[i+2].substr(j, splited_line[i+2].length() - j );
+            double z = stod(splited_line[i+2],0);
+*/
 
             //Get Z value from ground's height
             double z = stod(splited_line[13]);
@@ -235,7 +240,7 @@ void cjioDS(std::vector<std::vector<Face>>& all,
 
 int main(int argc, const char * argv[]) {
     const char *file_in = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/CSV/tudcampus.csv";
-    const char *file_out = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/test.json";
+    const char *file_out = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/tu.json";
     std::map<std::string, std::vector<Point>> vertices;
     std::map<std::string, std::map<unsigned int, std::vector<Point>>> buildings;
     std::map<std::string, std::string> const_year;
@@ -250,7 +255,6 @@ int main(int argc, const char * argv[]) {
 
     //Map-> building : { id : building_id , faces : { id :  face_id, vertices : [[v1,...vn]] }}
     building_mapper(buildings,vertices);
-    std::cout << std::setprecision(16) << buildings.find("0503100000004585")->second.at(150).at(0).x;
 
     std::map<Point, int> Vertice_mapper;
     std::vector<Point> ordered_verts;
