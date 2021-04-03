@@ -1,6 +1,23 @@
 #ifndef Point_h
 #define Point_h
 #include<assert.h>
+class MyPoint : public std::array<double, 2>
+{
+public:
+
+    // dimension of space (or "k" of k-d tree)
+    // KDTree class accesses this member
+    static const int DIM = 2;
+
+    // the constructors
+    MyPoint() {}
+    MyPoint(double x, double y)
+    {
+        (*this)[0] = x;
+        (*this)[1] = y;
+    }
+};
+
 struct Point {
   double x, y, z, z_r;
   int hl;

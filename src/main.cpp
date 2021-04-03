@@ -16,6 +16,9 @@
 #include <stack>
 #include <algorithm>
 
+#include <kdtree.h>
+
+
 #include "Point.h"
 #include "json.hpp"
 
@@ -72,7 +75,7 @@ void read(const char *file_in, std::map<std::string, std::vector<Point>> &v,
         std::vector<Point> verts;
         //auto q = spliter2(splited_line[19]);
         unsigned int hole = 0;
-        for (unsigned int i = 16; i<splited_line.size(); i=i+2 ) {// +3 //Start from 16th element (from wich the coordinate start and continue with step 2
+        for (unsigned int i = 16; i<splited_line.size(); i=i+3 ) {// +3 //Start from 16th element (from wich the coordinate start and continue with step 2
 
             if(splited_line[i-1].substr( splited_line[i-1].length() - 2 ) == "]]" && splited_line[i].substr(0,2) == "[["){
                 verts.pop_back(); //removes the last "closing" vertex as is redundant. -> Polygon(v1,v2,v3,v4,v1)
@@ -88,15 +91,15 @@ void read(const char *file_in, std::map<std::string, std::vector<Point>> &v,
             for ( ; j < splited_line[i+1].length(); j++ ){ if ( isdigit(splited_line[i+1][j]) ) break; }
             splited_line[i+1] = splited_line[i+1].substr(j, splited_line[i+1].length() - j );
             double id_y = stod(splited_line[i+1],0); //atof(splited_line[i+1].c_str());
-/*
+
             j=0;
             for ( ; j < splited_line[i+2].length(); j++ ){ if ( isdigit(splited_line[i+2][j]) ) break; }
             splited_line[i+2] = splited_line[i+2].substr(j, splited_line[i+2].length() - j );
             double z = stod(splited_line[i+2],0);
-*/
+
 
             //Get Z value from ground's height
-            double z = stod(splited_line[13]);
+            //double z = stod(splited_line[13]);
             //Get Z value from roof's height
             double roofz = stod(splited_line[12]);
 
@@ -115,7 +118,6 @@ void read(const char *file_in, std::map<std::string, std::vector<Point>> &v,
 
 void building_mapper(std::map<std::string, std::map<unsigned int, std::vector<Point>>>& b,std::map<std::string, std::vector<Point>>& v){
     Point bottom1, bottom2, up1, up2;
-
 
     for (auto const& i : v){
         unsigned int curr_hole = 0;
@@ -137,6 +139,7 @@ void building_mapper(std::map<std::string, std::map<unsigned int, std::vector<Po
                     //if (i.second[k].hl!=0){break;} // Checking whether a hole vertex exists and skips it
                     CCW_vert.push_back(i.second[k]);
                 }
+
             }
             else if ( j == 1){ //Second face -> roof face (CCW)
 
@@ -185,6 +188,10 @@ void building_mapper(std::map<std::string, std::map<unsigned int, std::vector<Po
         //b[i.first].find(0)->second.pop_back();
         //b[i.first].find(1)->second.pop_back();
     }
+}
+
+void drape(std::map<std::string, std::map<unsigned int, std::vector<Point>>>& buildings){
+
 }
 
 void cjioDS(std::vector<std::vector<Face>>& all,
@@ -239,16 +246,12 @@ void cjioDS(std::vector<std::vector<Face>>& all,
 }
 
 int main(int argc, const char * argv[]) {
-    const char *file_in = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/CSV/tudcampus.csv";
-    const char *file_out = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/tu.json";
+    const char *file_in = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/CSV/tudcamposdraped.csv";
+    const char *file_out = "/home/konstantinos/Desktop/TUDelft-Courses/Q3/GEO1004/hw3/data/test.json";
     std::map<std::string, std::vector<Point>> vertices;
     std::map<std::string, std::map<unsigned int, std::vector<Point>>> buildings;
     std::map<std::string, std::string> const_year;
     std::map<std::string, unsigned int> storeys;
-
-
-//TODO: Adjust "values" to holes
-
 
     //Read CSV file, mapping vertices to their building
     read(file_in,vertices,const_year, storeys);
@@ -256,11 +259,23 @@ int main(int argc, const char * argv[]) {
     //Map-> building : { id : building_id , faces : { id :  face_id, vertices : [[v1,...vn]] }}
     building_mapper(buildings,vertices);
 
+    drape(buildings);
+
+    std::vector<MyPoint> pts;
     std::map<Point, int> Vertice_mapper;
     std::vector<Point> ordered_verts;
     int count=0;
+    int count0=0;
     for (auto const& b : buildings){
+        count0=0; // FOR KD-tree
         for (auto const& f : b.second){
+            if (count0 == 0){ // FOR KD-tree
+                for (auto const& v0 : f.second){
+                    pts.push_back(MyPoint(v0.x,v0.y));
+                }
+
+            }
+            count0++; // FOR KD-tree
             for (auto const& v : f.second){
                 if (std::find(ordered_verts.begin(), ordered_verts.end(), v) !=
                     ordered_verts.end()) {
@@ -272,12 +287,21 @@ int main(int argc, const char * argv[]) {
         }
     }
 
+
     std::vector<std::vector<Face>> all;
     cjioDS(all, buildings, Vertice_mapper, ordered_verts);
 
+    kdt::KDTree<MyPoint> kdTree(pts); // FOR KD-tree
+    auto a = kdTree.nnSearch(MyPoint(85405.157, 445080.467)); // FOR KD-tree
 
 
+    for (auto const& v : ordered_verts){
+        auto closest = kdTree.nnSearch(MyPoint(v.x, v.y));
+        if (ordered_verts[closest] == v){
+            auto one = ordered_verts[closest];
 
+        }
+    }
 
 
     //Export to CityJson

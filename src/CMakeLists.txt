@@ -9,5 +9,6 @@ add_executable(src
         main.cpp
         Point.h
         json.hpp
+        kdtree.h
 )
 
