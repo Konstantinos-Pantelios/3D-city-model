@@ -74,7 +74,6 @@ linestream >> cursor;
 
     
   }
-  std::cout << "Number of vertices: " << vertices.size() << std:: endl;
   return 0;
 }
 
@@ -191,14 +190,10 @@ void writeJSON(std::map<int, std::vector<Point_3>> &points3, std::map<int, Polyh
 
         } while ( ++j != k->facet_begin());
         
+        json nestedFace;
+        nestedFace.emplace_back(face1);
+        treetop.emplace_back(nestedFace);
        
-
-        json tempo1;
-        tempo1.emplace_back(face1);
-        treetop.emplace_back(tempo1);
-        
-
-
 		}
 		boundaries.emplace_back(json::array().emplace_back(json::array().emplace_back(treetop)));
 
@@ -275,9 +270,9 @@ void writeJSON(std::map<int, std::vector<Point_3>> &points3, std::map<int, Polyh
 
         } while ( ++j != k->facet_begin());
         
-        json tempo;
-        tempo.emplace_back(face1);
-        trunkjson.emplace_back(tempo);
+        json nestedTrunk;
+        nestedTrunk.emplace_back(face1);
+        trunkjson.emplace_back(nestedTrunk);
         
 
 		}
@@ -345,14 +340,11 @@ int main()
 
 	assignPointsToTree(vertices, treeTops, Trees);
 
-	cout << "treetopsizefin " << treeTops.size() << endl;
-    cout << "treetop " << treeTops[0] << endl;
-    cout << "vertex " << vertices[0] << endl;
+
     write_file(vertices, treeTops, Trees, output, points3);
     buildHull(points3, polyTrees);
 
   	Polyhedron_3 poly1 = polyTrees[8];
   	writeJSON(points3, polyTrees, output2);
-
 
 }
